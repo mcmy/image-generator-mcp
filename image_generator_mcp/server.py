@@ -7,6 +7,7 @@ from typing import Any, Literal
 from mcp.server.fastmcp import FastMCP
 from PIL import Image
 
+from .constants import DEFAULT_TIMEOUT_SECONDS
 from .http_client import auth_headers, gemini_headers, post_json, post_multipart, post_multipart_raw, post_stream_json, post_stream_multipart
 from .inputs import image_input_to_file, image_inputs_to_files, resolve_binary_input
 from .payloads import build_chat_messages, build_gemini_generate_content_payload, build_response_image_tool, build_response_input, build_xai_edit_image_payload
@@ -30,10 +31,6 @@ from .validation import (
     validate_common,
     validate_partial_images,
 )
-
-
-DEFAULT_TIMEOUT_SECONDS = 120
-
 
 def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
     mcp = FastMCP(

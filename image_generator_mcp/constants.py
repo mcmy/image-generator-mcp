@@ -1,3 +1,5 @@
+DEFAULT_TIMEOUT_SECONDS = 180
+
 QUALITY_CHOICES = {"auto", "low", "medium", "high"}
 FORMAT_CHOICES = {"png", "jpeg", "jpg", "webp"}
 BACKGROUND_CHOICES = {"auto", "opaque", "transparent"}

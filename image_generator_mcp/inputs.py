@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 import httpx
 
+from .constants import DEFAULT_TIMEOUT_SECONDS
 from .models import BinaryInput
 
 
@@ -35,7 +36,7 @@ async def resolve_binary_input(item: dict[str, object]) -> BinaryInput:
 
     if item.get("url"):
         url = str(item["url"])
-        async with httpx.AsyncClient(timeout=120) as client:
+        async with httpx.AsyncClient(timeout=DEFAULT_TIMEOUT_SECONDS) as client:
             response = await client.get(url)
         if response.is_error:
             raise RuntimeError(f"Failed to fetch image URL {url}: HTTP {response.status_code}")

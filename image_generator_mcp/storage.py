@@ -8,6 +8,7 @@ from typing import Any
 
 import httpx
 
+from .constants import DEFAULT_TIMEOUT_SECONDS
 from .inputs import decode_data_url, extension_for_mime
 from .validation import normalize_output_extension, normalize_output_format
 
@@ -18,7 +19,7 @@ def save_image_api_result(
     output_dir: str,
     output_format: str,
     filename_prefix: str | None = None,
-    timeout_seconds: float | None = 120,
+    timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
 ) -> dict[str, Any]:
     data = body.get("data") or []
     if not data:
@@ -61,7 +62,7 @@ def save_gemini_result(
     output_path: str | None,
     output_dir: str,
     filename_prefix: str | None,
-    timeout_seconds: float | None = 120,
+    timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
 ) -> dict[str, Any]:
     image_parts = []
     text_parts = []
@@ -162,7 +163,7 @@ def save_generic_image_result(
     output_dir: str,
     filename_prefix: str | None,
     output_format: str = "png",
-    timeout_seconds: float | None = 120,
+    timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
 ) -> dict[str, Any]:
     images = collect_embedded_images(body)
     if not images:
@@ -352,7 +353,7 @@ def write_b64_image(b64: str, path: Path) -> None:
     path.write_bytes(base64.b64decode(b64))
 
 
-def download_image_to_path(url: str, path: Path, timeout_seconds: float | None = 120) -> Path:
+def download_image_to_path(url: str, path: Path, timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS) -> Path:
     with httpx.Client(timeout=timeout_seconds, follow_redirects=True) as client:
         response = client.get(url)
     if response.is_error:

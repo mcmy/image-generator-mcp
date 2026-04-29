@@ -5,6 +5,7 @@ from typing import Any, Callable
 
 import httpx
 
+from .constants import DEFAULT_TIMEOUT_SECONDS
 from .models import BinaryInput
 from .validation import normalize_base_url
 
@@ -39,7 +40,7 @@ async def post_json(
     payload: dict[str, Any],
     base_url_normalizer: Callable[[str], str] = normalize_base_url,
     headers_builder: Callable[[str], dict[str, str]] | None = None,
-    timeout_seconds: float | None = 120,
+    timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
 ) -> dict[str, Any]:
     build_headers = headers_builder or auth_headers
     async with httpx.AsyncClient(timeout=timeout_seconds) as client:
@@ -57,7 +58,7 @@ async def post_multipart(
     path: str,
     data: dict[str, Any],
     file_parts: list[tuple[str, BinaryInput]],
-    timeout_seconds: float | None = 120,
+    timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
 ) -> dict[str, Any]:
     files = [(name, (part.filename, part.data, part.mime_type)) for name, part in file_parts]
     return await post_multipart_raw(api_key, base_url, path, data, files, timeout_seconds=timeout_seconds)
@@ -69,7 +70,7 @@ async def post_multipart_raw(
     path: str,
     data: dict[str, Any],
     files: Any,
-    timeout_seconds: float | None = 120,
+    timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
 ) -> dict[str, Any]:
     async with httpx.AsyncClient(timeout=timeout_seconds) as client:
         response = await client.post(
@@ -86,7 +87,7 @@ async def post_stream_json(
     base_url: str,
     path: str,
     payload: dict[str, Any],
-    timeout_seconds: float | None = 120,
+    timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
 ) -> list[dict[str, Any]]:
     async with httpx.AsyncClient(timeout=timeout_seconds) as client:
         async with client.stream(
@@ -105,7 +106,7 @@ async def post_stream_multipart(
     path: str,
     data: dict[str, Any],
     file_parts: list[tuple[str, BinaryInput]],
-    timeout_seconds: float | None = 120,
+    timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
 ) -> list[dict[str, Any]]:
     files = [(name, (part.filename, part.data, part.mime_type)) for name, part in file_parts]
     async with httpx.AsyncClient(timeout=timeout_seconds) as client:
