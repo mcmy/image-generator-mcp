@@ -1,7 +1,7 @@
 [project]
-name = "gpt-image-generator"
+name = "image-generator-mcp"
 version = "0.1.0"
-description = "MCP server for GPT Image generation and editing workflows"
+description = "MCP server for OpenAI, Gemini, and xAI image generation workflows"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -11,4 +11,10 @@ dependencies = [
 ]
 
 [project.scripts]
-gpt-image-mcp = "gpt_image_mcp.server:main"
+image-generator-mcp = "image_generator_mcp.server:main"
+
+[tool.setuptools.packages.find]
+include = ["image_generator_mcp*"]
+
+[tool.uv]
+package = true

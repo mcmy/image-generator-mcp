@@ -1,4 +1,4 @@
-from gpt_image_mcp.server import main
+from image_generator_mcp.server import main
 
 
 if __name__ == "__main__":
