@@ -4,14 +4,31 @@ version = "0.1.0"
 description = "MCP server for OpenAI, Gemini, and xAI image generation workflows"
 readme = "README.md"
 requires-python = ">=3.13"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet",
+    "Topic :: Multimedia :: Graphics",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
 dependencies = [
     "httpx>=0.28.1",
     "mcp[cli]>=1.27.0",
     "pillow>=12.2.0",
 ]
 
+[project.urls]
+Homepage = "https://git.nfcat.com/mcmy/image-generator-mcp"
+Repository = "https://git.nfcat.com/mcmy/image-generator-mcp"
+
 [project.scripts]
 image-generator-mcp = "image_generator_mcp.server:main"
+
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 include = ["image_generator_mcp*"]

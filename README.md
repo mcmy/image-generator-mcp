@@ -10,6 +10,12 @@ does not store API tokens; pass `api_key` on every tool call.
 uv sync
 ```
 
+Install from PyPI after publishing:
+
+```bash
+uvx image-generator-mcp
+```
+
 ## Run
 
 Stdio:
@@ -30,11 +36,43 @@ Streamable HTTP:
 uv run python main.py --transport streamable-http --host 127.0.0.1 --port 8000
 ```
 
+Installed console script:
+
+```bash
+image-generator-mcp
+image-generator-mcp --transport sse --host 127.0.0.1 --port 8000
+image-generator-mcp --transport streamable-http --host 127.0.0.1 --port 8000
+```
+
 FastMCP defaults:
 
 - SSE endpoint: `http://127.0.0.1:8000/sse`
 - SSE messages: `http://127.0.0.1:8000/messages/`
 - Streamable HTTP endpoint: `http://127.0.0.1:8000/mcp`
+
+## Publish To PyPI
+
+Build the package:
+
+```bash
+uv build
+```
+
+Publish to TestPyPI first:
+
+```bash
+UV_PUBLISH_TOKEN="<testpypi-token>" ./scripts/publish-pypi.sh test.pypi
+```
+
+Publish to PyPI:
+
+```bash
+UV_PUBLISH_TOKEN="<pypi-token>" ./scripts/publish-pypi.sh pypi
+```
+
+The script removes `dist/`, builds a fresh source distribution and wheel, then
+uses `uv publish`. Keep PyPI tokens in environment variables or your CI secret
+store; do not commit them.
 
 ## Tools
 
