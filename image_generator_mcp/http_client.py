@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from typing import Any, Callable
 
 import httpx
@@ -8,6 +9,8 @@ import httpx
 from .constants import DEFAULT_TIMEOUT_SECONDS
 from .models import BinaryInput
 from .validation import normalize_base_url
+
+logger = logging.getLogger("image_generator_mcp")
 
 
 def auth_headers(api_key: str) -> dict[str, str]:
@@ -26,6 +29,7 @@ def gemini_headers(api_key: str) -> dict[str, str]:
 
 def parse_response(response: httpx.Response) -> dict[str, Any]:
     if response.is_error:
+        logger.error("Upstream request failed: HTTP %s", response.status_code)
         raise RuntimeError(f"HTTP {response.status_code}: {response.text}")
     try:
         return response.json()
@@ -49,6 +53,7 @@ async def post_json(
             headers=build_headers(api_key),
             json=payload,
         )
+    logger.info("Upstream POST %s returned HTTP %s", path, response.status_code)
     return parse_response(response)
 
 
@@ -79,6 +84,7 @@ async def post_multipart_raw(
             data={k: str(v) for k, v in data.items()},
             files=files,
         )
+    logger.info("Upstream multipart POST %s returned HTTP %s", path, response.status_code)
     return parse_response(response)
 
 

@@ -2,7 +2,8 @@
 
 MCP server for image generation and editing workflows across OpenAI-compatible
 Image APIs, Gemini `generateContent`, and xAI Grok image endpoints. The server
-does not store API tokens; pass `api_key` on every tool call.
+does not store API tokens. Configure provider keys in the MCP server environment,
+or pass `api_key` on individual tool calls when needed.
 
 ## Install
 
@@ -18,6 +19,17 @@ uvx image-generator-mcp
 
 ## Run
 
+Set the provider key before starting the server:
+
+```bash
+export OPENAI_API_KEY="sk-..."
+export GEMINI_API_KEY="AIza..."
+export XAI_API_KEY="xai-..."
+```
+
+The generic `IMAGE_GENERATOR_API_KEY` and `API_KEY` environment variables are
+also accepted. Explicit `api_key` tool arguments override environment variables.
+
 Stdio:
 
 ```bash
@@ -28,12 +40,14 @@ SSE:
 
 ```bash
 uv run python main.py --transport sse --host 127.0.0.1 --port 8000
+uv run python main.py -t sse -H 127.0.0.1 -p 8000
 ```
 
 Streamable HTTP:
 
 ```bash
 uv run python main.py --transport streamable-http --host 127.0.0.1 --port 8000
+uv run python main.py -t streamable-http -H 127.0.0.1 -p 8000
 ```
 
 Installed console script:
@@ -42,6 +56,7 @@ Installed console script:
 image-generator-mcp
 image-generator-mcp --transport sse --host 127.0.0.1 --port 8000
 image-generator-mcp --transport streamable-http --host 127.0.0.1 --port 8000
+image-generator-mcp -t streamable-http -H 127.0.0.1 -p 8000
 ```
 
 FastMCP defaults:
@@ -49,6 +64,32 @@ FastMCP defaults:
 - SSE endpoint: `http://127.0.0.1:8000/sse`
 - SSE messages: `http://127.0.0.1:8000/messages/`
 - Streamable HTTP endpoint: `http://127.0.0.1:8000/mcp`
+
+## MCP Client Config
+
+For most AI clients, prefer stdio and put secrets in `env` so the model does not
+need to provide them as tool arguments:
+
+```json
+{
+  "mcpServers": {
+    "image-generator": {
+      "command": "uv",
+      "args": ["run", "python", "main.py"],
+      "cwd": "/Users/canny/project/python/image-generator-mcp",
+      "env": {
+        "OPENAI_API_KEY": "sk-...",
+        "GEMINI_API_KEY": "AIza...",
+        "XAI_API_KEY": "xai-..."
+      }
+    }
+  }
+}
+```
+
+If your client only supports remote MCP URLs, run Streamable HTTP and configure
+the client to use `http://127.0.0.1:8000/mcp`. Use `--host 0.0.0.0` only when
+the server must be reachable from another machine.
 
 ## Publish To PyPI
 
@@ -75,6 +116,17 @@ uses `uv publish`. Keep PyPI tokens in environment variables or your CI secret
 store; do not commit them.
 
 ## Tools
+
+For AI clients, the lowest-friction tools are:
+
+- OpenAI-compatible text-to-image: `image_generate` with only `prompt`.
+- OpenAI-compatible image edit: `image_edit` with `prompt` and `images`.
+- Gemini generation/editing: `gemini_image` with `prompt`, plus optional `images`.
+- xAI generation: `xai_image_generate` with only `prompt`.
+- xAI editing: `xai_image_edit` with `prompt` and `images`.
+
+Use the streaming and direct/chat variants only when a provider specifically
+requires those API shapes.
 
 - `image_generate`: OpenAI-compatible Image API text-to-image generation via `/images/generations`.
 - `image_generate_stream`: OpenAI-compatible streaming generation with `partial_images`.

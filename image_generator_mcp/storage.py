@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import logging
 import re
 from datetime import datetime
 from pathlib import Path
@@ -11,6 +12,8 @@ import httpx
 from .constants import DEFAULT_TIMEOUT_SECONDS
 from .inputs import decode_data_url, extension_for_mime
 from .validation import normalize_output_extension, normalize_output_format
+
+logger = logging.getLogger("image_generator_mcp")
 
 
 def save_image_api_result(
@@ -23,7 +26,12 @@ def save_image_api_result(
 ) -> dict[str, Any]:
     data = body.get("data") or []
     if not data:
-        raise RuntimeError(f"No image data returned: {body}")
+        return {
+            "status": "no_image_data",
+            "message": "The upstream request succeeded, but the response did not include image data.",
+            "saved_images": [],
+            "raw": redact_large_images(body),
+        }
     saved = []
     multiple = len(data) > 1
     for idx, item in enumerate(data):
@@ -54,7 +62,12 @@ def save_image_api_result(
                 "url": url,
             }
         )
-    return {"saved_images": saved, "raw": redact_large_images(body)}
+    return {
+        "status": saved_images_status(saved),
+        "message": saved_images_message(saved),
+        "saved_images": saved,
+        "raw": redact_large_images(body),
+    }
 
 
 def save_gemini_result(
@@ -79,7 +92,13 @@ def save_gemini_result(
                 text_parts.append(part["text"])
 
     if not image_parts:
-        raise RuntimeError(f"No image data returned: {redact_large_images(body)}")
+        return {
+            "status": "no_image_data",
+            "message": "The upstream request succeeded, but the response did not include image data.",
+            "saved_images": [],
+            "text": "\n".join(text_parts),
+            "raw": redact_large_images(body),
+        }
 
     saved = []
     multiple = len(image_parts) > 1
@@ -122,6 +141,8 @@ def save_gemini_result(
         )
 
     return {
+        "status": saved_images_status(saved),
+        "message": saved_images_message(saved),
         "saved_images": saved,
         "text": "\n".join(text_parts),
         "raw": redact_large_images(body),
@@ -152,6 +173,8 @@ def save_responses_result(
             }
         )
     return {
+        "status": saved_images_status(saved),
+        "message": saved_images_message(saved),
         "response_id": body.get("id"),
         "saved_images": saved,
         "image_generation_calls": redact_large_images(calls),
@@ -167,7 +190,12 @@ def save_generic_image_result(
 ) -> dict[str, Any]:
     images = collect_embedded_images(body)
     if not images:
-        raise RuntimeError(f"No image data returned: {redact_large_images(body)}")
+        return {
+            "status": "no_image_data",
+            "message": "The upstream request succeeded, but no embedded image data or image URL was found in the response.",
+            "saved_images": [],
+            "raw": redact_large_images(body),
+        }
 
     saved = []
     prefix = filename_prefix or "image"
@@ -206,7 +234,33 @@ def save_generic_image_result(
             }
         )
 
-    return {"saved_images": saved, "raw": redact_large_images(body)}
+    return {
+        "status": saved_images_status(saved),
+        "message": saved_images_message(saved),
+        "saved_images": saved,
+        "raw": redact_large_images(body),
+    }
+
+
+def saved_images_status(saved: list[dict[str, Any]]) -> str:
+    if any(item.get("path") for item in saved):
+        for item in saved:
+            if item.get("path"):
+                logger.info("Saved image to %s", item["path"])
+        return "partial_success" if any(item.get("download_error") for item in saved) else "saved"
+    if any(item.get("download_error") for item in saved):
+        logger.warning("Image generation completed, but image download failed: %s", saved)
+        return "download_failed"
+    logger.warning("Image generation completed, but no image file was saved.")
+    return "no_saved_images"
+
+
+def saved_images_message(saved: list[dict[str, Any]]) -> str:
+    if any(item.get("path") for item in saved):
+        return "Image generation completed and saved locally."
+    if any(item.get("download_error") for item in saved):
+        return "Image generation completed, but downloading the returned image URL failed."
+    return "Image generation completed, but no image file was saved."
 
 
 def collect_embedded_images(value: Any) -> list[dict[str, str]]:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 from io import BytesIO
 from typing import Any, Literal
 
@@ -32,12 +33,40 @@ from .validation import (
     validate_partial_images,
 )
 
+
+def resolve_api_key(api_key: str | None, base_url: str, provider: str | None = None) -> str:
+    explicit = (api_key or "").strip()
+    if explicit:
+        return explicit
+
+    normalized_provider = (provider or "").lower()
+    lowered_base_url = (base_url or "").lower()
+    names = ["IMAGE_GENERATOR_API_KEY"]
+    if normalized_provider == "gemini" or "googleapis.com" in lowered_base_url:
+        names.extend(["GEMINI_API_KEY", "GOOGLE_API_KEY"])
+    elif normalized_provider == "xai" or "api.x.ai" in lowered_base_url:
+        names.append("XAI_API_KEY")
+    else:
+        names.append("OPENAI_API_KEY")
+    names.append("API_KEY")
+
+    for name in names:
+        value = os.getenv(name, "").strip()
+        if value:
+            return value
+
+    raise ValueError(
+        "api_key was not provided and no matching environment variable is set. "
+        f"Tried: {', '.join(dict.fromkeys(names))}."
+    )
+
+
 def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
     mcp = FastMCP(
         "image-generator-mcp",
         instructions=(
             "Generate, edit, stream, and save image outputs across OpenAI, Gemini, and xAI. "
-            "Every tool call accepts api_key explicitly; the server does not store tokens."
+            "Tools accept api_key explicitly, or read provider keys from environment variables."
         ),
         host=host,
         port=port,
@@ -50,7 +79,6 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         )
     )
     async def image_generate(
-        api_key: str,
         prompt: str,
         base_url: str = "https://api.openai.com/v1",
         model: str = "gpt-image-2",
@@ -64,8 +92,10 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
         output_path: str | None = None,
         output_dir: str = "outputs",
+        api_key: str | None = None,
     ) -> dict[str, Any]:
         validate_common(prompt, size, quality, output_format, background, moderation, n)
+        api_key = resolve_api_key(api_key, base_url)
         payload = compact(
             {
                 "model": model,
@@ -89,7 +119,6 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         )
     )
     async def image_generate_stream(
-        api_key: str,
         prompt: str,
         base_url: str = "https://api.openai.com/v1",
         model: str = "gpt-image-2",
@@ -103,8 +132,10 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
         output_dir: str = "outputs",
         filename_prefix: str | None = None,
+        api_key: str | None = None,
     ) -> dict[str, Any]:
         validate_common(prompt, size, quality, output_format, background, moderation, 1)
+        api_key = resolve_api_key(api_key, base_url)
         partial_images = validate_partial_images(partial_images)
         fmt = normalize_output_format(output_format)
         payload = compact(
@@ -132,7 +163,6 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         )
     )
     async def image_edit(
-        api_key: str,
         prompt: str,
         images: list[dict[str, Any]],
         mask: dict[str, Any] | None = None,
@@ -148,9 +178,11 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
         output_path: str | None = None,
         output_dir: str = "outputs",
+        api_key: str | None = None,
     ) -> dict[str, Any]:
         if not images:
             raise ValueError("images must include at least one image input.")
+        api_key = resolve_api_key(api_key, base_url)
         validate_common(prompt, size, quality, output_format, background, moderation, n)
         fmt = normalize_output_format(output_format)
         data = compact(
@@ -179,7 +211,6 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         )
     )
     async def image_edit_stream(
-        api_key: str,
         prompt: str,
         images: list[dict[str, Any]],
         mask: dict[str, Any] | None = None,
@@ -195,9 +226,11 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
         output_dir: str = "outputs",
         filename_prefix: str | None = None,
+        api_key: str | None = None,
     ) -> dict[str, Any]:
         if not images:
             raise ValueError("images must include at least one image input.")
+        api_key = resolve_api_key(api_key, base_url)
         validate_common(prompt, size, quality, output_format, background, moderation, 1)
         fmt = normalize_output_format(output_format)
         data = compact(
@@ -228,7 +261,6 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         )
     )
     async def responses_image(
-        api_key: str,
         prompt: str,
         image_inputs: list[dict[str, Any]] | None = None,
         input_items: list[dict[str, Any]] | None = None,
@@ -246,7 +278,9 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
         output_dir: str = "outputs",
         filename_prefix: str | None = None,
+        api_key: str | None = None,
     ) -> dict[str, Any]:
+        api_key = resolve_api_key(api_key, base_url)
         tool = build_response_image_tool(
             action,
             size,
@@ -275,7 +309,6 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         )
     )
     async def responses_image_stream(
-        api_key: str,
         prompt: str,
         image_inputs: list[dict[str, Any]] | None = None,
         input_items: list[dict[str, Any]] | None = None,
@@ -294,7 +327,9 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
         output_dir: str = "outputs",
         filename_prefix: str | None = None,
+        api_key: str | None = None,
     ) -> dict[str, Any]:
+        api_key = resolve_api_key(api_key, base_url)
         tool = build_response_image_tool(
             action,
             size,
@@ -334,7 +369,6 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         )
     )
     async def gemini_image(
-        api_key: str,
         prompt: str,
         images: list[dict[str, Any]] | None = None,
         base_url: str = "https://generativelanguage.googleapis.com/v1beta",
@@ -351,9 +385,11 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         output_dir: str = "outputs",
         filename_prefix: str | None = None,
         raw_payload: dict[str, Any] | None = None,
+        api_key: str | None = None,
     ) -> dict[str, Any]:
         if not (prompt or "").strip():
             raise ValueError("prompt is required.")
+        api_key = resolve_api_key(api_key, base_url, "gemini")
         payload = raw_payload or await build_gemini_generate_content_payload(
             prompt,
             images,
@@ -383,7 +419,6 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         )
     )
     async def xai_image_generate(
-        api_key: str,
         prompt: str,
         base_url: str = "https://api.x.ai/v1",
         model: str = "grok-imagine-image",
@@ -395,9 +430,11 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
         output_path: str | None = None,
         output_dir: str = "outputs",
+        api_key: str | None = None,
     ) -> dict[str, Any]:
         if not (prompt or "").strip():
             raise ValueError("prompt is required.")
+        api_key = resolve_api_key(api_key, base_url, "xai")
         if n < 1:
             raise ValueError("n must be at least 1.")
         fmt = normalize_xai_response_format(response_format)
@@ -422,7 +459,6 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         )
     )
     async def xai_image_edit(
-        api_key: str,
         prompt: str,
         images: list[dict[str, Any]],
         base_url: str = "https://api.x.ai/v1",
@@ -442,9 +478,11 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
         output_path: str | None = None,
         output_dir: str = "outputs",
+        api_key: str | None = None,
     ) -> dict[str, Any]:
         if not (prompt or "").strip():
             raise ValueError("prompt is required.")
+        api_key = resolve_api_key(api_key, base_url, "xai")
         if not images:
             raise ValueError("images must include at least one image input.")
         if len(images) > 5:
@@ -503,7 +541,6 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         )
     )
     async def chat_image(
-        api_key: str,
         prompt: str,
         images: list[dict[str, Any]] | None = None,
         base_url: str = "https://api.openai.com/v1",
@@ -515,9 +552,11 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         output_dir: str = "outputs",
         filename_prefix: str | None = None,
         raw_payload: dict[str, Any] | None = None,
+        api_key: str | None = None,
     ) -> dict[str, Any]:
         if not (prompt or "").strip():
             raise ValueError("prompt is required.")
+        api_key = resolve_api_key(api_key, base_url)
         payload = raw_payload or compact(
             {
                 "model": model,
@@ -536,7 +575,6 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         )
     )
     async def responses_direct_image(
-        api_key: str,
         prompt: str,
         base_url: str = "https://api.openai.com/v1",
         model: str = "grok-4.2-image",
@@ -545,9 +583,11 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         output_dir: str = "outputs",
         filename_prefix: str | None = None,
         raw_payload: dict[str, Any] | None = None,
+        api_key: str | None = None,
     ) -> dict[str, Any]:
         if not (prompt or "").strip():
             raise ValueError("prompt is required.")
+        api_key = resolve_api_key(api_key, base_url)
         payload = raw_payload or {
             "model": model,
             "input": prompt,
@@ -563,12 +603,13 @@ def create_mcp(host: str = "127.0.0.1", port: int = 8000) -> FastMCP:
         )
     )
     async def upload_file(
-        api_key: str,
         file: dict[str, Any],
         base_url: str = "https://api.openai.com/v1",
         purpose: str = "vision",
         timeout_seconds: float | None = DEFAULT_TIMEOUT_SECONDS,
+        api_key: str | None = None,
     ) -> dict[str, Any]:
+        api_key = resolve_api_key(api_key, base_url)
         binary = await resolve_binary_input(file)
         files = {"file": (binary.filename, binary.data, binary.mime_type)}
         data = {"purpose": purpose}
@@ -622,12 +663,13 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run Image Generator MCP server.")
     parser.add_argument(
         "--transport",
+        "-t",
         choices=["stdio", "sse", "streamable-http"],
         default="stdio",
         help="MCP transport to run.",
     )
-    parser.add_argument("--host", default="127.0.0.1", help="Host for SSE/streamable-http.")
-    parser.add_argument("--port", type=int, default=8000, help="Port for SSE/streamable-http.")
+    parser.add_argument("--host", "-H", default="127.0.0.1", help="Host for SSE/streamable-http.")
+    parser.add_argument("--port", "-p", type=int, default=8000, help="Port for SSE/streamable-http.")
     return parser.parse_args()
 
 
