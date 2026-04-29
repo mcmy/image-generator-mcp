@@ -226,12 +226,13 @@ wheels = [
 
 [[package]]
 name = "image-generator-mcp"
-version = "0.1.1"
+version = "0.1.4"
 source = { editable = "." }
 dependencies = [
     { name = "httpx" },
     { name = "mcp", extra = ["cli"] },
     { name = "pillow" },
+    { name = "starlette" },
 ]
 
 [package.metadata]
@@ -239,6 +240,7 @@ requires-dist = [
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "mcp", extras = ["cli"], specifier = ">=1.27.0" },
     { name = "pillow", specifier = ">=12.2.0" },
+    { name = "starlette", specifier = ">=1.0.0" },
 ]
 
 [[package]]

@@ -19,16 +19,21 @@ uvx image-generator-mcp
 
 ## Run
 
-Set the provider key before starting the server:
+Set the provider key and optional base URL before starting the server:
 
 ```bash
 export OPENAI_API_KEY="sk-..."
 export GEMINI_API_KEY="AIza..."
 export XAI_API_KEY="xai-..."
+export OPENAI_BASE_URL="https://api.openai.com/v1"
+export GEMINI_BASE_URL="https://generativelanguage.googleapis.com/v1beta"
+export XAI_BASE_URL="https://api.x.ai/v1"
 ```
 
 The generic `IMAGE_GENERATOR_API_KEY` and `API_KEY` environment variables are
-also accepted. Explicit `api_key` tool arguments override environment variables.
+also accepted for keys. The generic `IMAGE_GENERATOR_BASE_URL` and `BASE_URL`
+environment variables are also accepted for URLs. Explicit `api_key` and
+`base_url` tool arguments override environment variables.
 
 Stdio:
 
@@ -64,6 +69,7 @@ FastMCP defaults:
 - SSE endpoint: `http://127.0.0.1:8000/sse`
 - SSE messages: `http://127.0.0.1:8000/messages/`
 - Streamable HTTP endpoint: `http://127.0.0.1:8000/mcp`
+- Human-readable docs: `http://127.0.0.1:8000/`, `http://127.0.0.1:8000/docs`, `http://127.0.0.1:8000/doc`
 
 ## MCP Client Config
 
@@ -79,8 +85,11 @@ need to provide them as tool arguments:
       "cwd": "/Users/canny/project/python/image-generator-mcp",
       "env": {
         "OPENAI_API_KEY": "sk-...",
+        "OPENAI_BASE_URL": "https://api.openai.com/v1",
         "GEMINI_API_KEY": "AIza...",
-        "XAI_API_KEY": "xai-..."
+        "GEMINI_BASE_URL": "https://generativelanguage.googleapis.com/v1beta",
+        "XAI_API_KEY": "xai-...",
+        "XAI_BASE_URL": "https://api.x.ai/v1"
       }
     }
   }
@@ -283,7 +292,7 @@ Responses API multi-turn:
 OpenAI-compatible generation/edit options:
 
 - `model`: defaults to `gpt-image-2` for Image API, `gpt-5.5` for Responses API.
-- `base_url`: defaults to `https://api.openai.com/v1`.
+- `base_url`: defaults to `OPENAI_BASE_URL`, `IMAGE_GENERATOR_BASE_URL`, `BASE_URL`, or `https://api.openai.com/v1`.
 - `size`: `auto`, popular sizes like `1024x1024`, or valid `WIDTHxHEIGHT`.
 - `quality`: `auto`, `low`, `medium`, `high`.
 - `output_format`: `png`, `jpeg`, `jpg`, `webp`.
@@ -294,7 +303,7 @@ OpenAI-compatible generation/edit options:
 
 Gemini options:
 
-- `base_url`: defaults to `https://generativelanguage.googleapis.com/v1beta`.
+- `base_url`: defaults to `GEMINI_BASE_URL`, `GOOGLE_BASE_URL`, `IMAGE_GENERATOR_BASE_URL`, `BASE_URL`, or `https://generativelanguage.googleapis.com/v1beta`.
 - `model`: defaults to `gemini-3-pro-image-preview`.
 - `aspect_ratio`: `auto`, `1:1`, `16:9`, `9:16`, `4:3`, `3:4`, and other Gemini-supported ratios.
 - `image_size`: `512`, `1K`, `2K`, or `4K`.
@@ -302,7 +311,7 @@ Gemini options:
 
 xAI options:
 
-- `base_url`: defaults to `https://api.x.ai/v1`.
+- `base_url`: defaults to `XAI_BASE_URL`, `IMAGE_GENERATOR_BASE_URL`, `BASE_URL`, or `https://api.x.ai/v1`.
 - `model`: defaults to `grok-imagine-image`; override if your account or proxy uses another image model name.
 - `request_format` on `xai_image_edit`: `json` for xAI-style image URL/data URL payloads, or `multipart` for OpenAI-compatible file upload edits.
 - `response_format`: `b64_json` or `url`.
