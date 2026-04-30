@@ -53,6 +53,7 @@ Streamable HTTP:
 ```bash
 uv run python main.py --transport streamable-http --host 127.0.0.1 --port 8000
 uv run python main.py -t streamable-http -H 127.0.0.1 -p 8000
+uv run python main.py -t mcp -H 127.0.0.1 -p 8000
 ```
 
 Installed console script:
@@ -62,6 +63,7 @@ image-generator-mcp
 image-generator-mcp --transport sse --host 127.0.0.1 --port 8000
 image-generator-mcp --transport streamable-http --host 127.0.0.1 --port 8000
 image-generator-mcp -t streamable-http -H 127.0.0.1 -p 8000
+image-generator-mcp -t mcp -H 127.0.0.1 -p 8000
 ```
 
 FastMCP defaults:

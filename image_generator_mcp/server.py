@@ -711,18 +711,24 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--transport",
         "-t",
-        choices=["stdio", "sse", "streamable-http"],
+        choices=["stdio", "sse", "streamable-http", "mcp"],
         default="stdio",
-        help="MCP transport to run.",
+        help="MCP transport to run. Use 'mcp' as a short alias for 'streamable-http'.",
     )
     parser.add_argument("--host", "-H", default="127.0.0.1", help="Host for SSE/streamable-http.")
     parser.add_argument("--port", "-p", type=int, default=8000, help="Port for SSE/streamable-http.")
     return parser.parse_args()
 
 
+def normalize_transport(transport: str) -> Literal["stdio", "sse", "streamable-http"]:
+    if transport == "mcp":
+        return "streamable-http"
+    return transport  # type: ignore[return-value]
+
+
 def main() -> None:
     args = parse_args()
-    create_mcp(host=args.host, port=args.port).run(transport=args.transport)
+    create_mcp(host=args.host, port=args.port).run(transport=normalize_transport(args.transport))
 
 
 if __name__ == "__main__":
